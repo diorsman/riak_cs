@@ -22,14 +22,12 @@
 
 -module(riak_cs_gc_console).
 
--export([
-         batch/1,
+-export([batch/1,
          status/1,
          pause/1,
          resume/1,
          cancel/1,
-         'set-interval'/1
-        ]).
+         'set-interval'/1]).
 
 -define(SAFELY(Code, Description),
         try
@@ -52,8 +50,8 @@
 
 %% @doc Kick off a gc round, unless one is already
 %% in progress.
-batch(_Opts) ->
-    ?SAFELY(start_batch(), "Starting garbage collection batch").
+batch(Opts) ->
+    ?SAFELY(start_batch(parse_batch_opts(Opts)), "Starting garbage collection batch").
 
 %% @doc Find out what the gc daemon is up to.
 status(_Opts) ->
@@ -75,8 +73,8 @@ resume(_Opts) ->
 %%% Internal functions
 %%%===================================================================
 
-start_batch() ->
-    handle_batch_start(riak_cs_gc_d:manual_batch([])).
+start_batch(Options) ->
+    handle_batch_start(riak_cs_gc_d:manual_batch(Options)).
 
 get_status() ->
     handle_status(riak_cs_gc_d:status()).
@@ -188,6 +186,11 @@ human_time(undefined) -> "unknown/never";
 human_time(Seconds) ->
     Seconds0 = Seconds + ?DAYS_FROM_0_TO_1970*?SECONDS_PER_DAY,
     rts:iso8601(calendar:gregorian_seconds_to_datetime(Seconds0)).
+
+parse_batch_opts([]) ->
+    [];
+parse_batch_opts([Leeway | _]) ->
+    [{leeway, catch list_to_integer(Leeway)}].
 
 parse_interval_opts([]) ->
     undefined;
