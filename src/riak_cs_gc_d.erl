@@ -473,7 +473,7 @@ continuation({{ok, ?INDEX_RESULTS{continuation=Continuation}},
 continuation({{error, _}, _EndTime}) ->
     undefined.
 
--spec gc_index_query(pid(), binary(), non_neg_integer(), binary()) ->
+-spec gc_index_query(pid(), binary(), non_neg_integer(), undefined | binary()) ->
                             {riakc_pb_socket:index_results(), binary()}.
 gc_index_query(RiakPid, EndTime, BatchSize, Continuation) ->
     gc_index_query(RiakPid,
@@ -482,7 +482,7 @@ gc_index_query(RiakPid, EndTime, BatchSize, Continuation) ->
                    Continuation,
                    riak_cs_config:gc_paginated_indexes()).
 
--spec gc_index_query(pid(), binary(), non_neg_integer(), binary(), boolean()) ->
+-spec gc_index_query(pid(), binary(), non_neg_integer(), undefined | binary(), boolean()) ->
                             {riakc_pb_socket:index_results(), binary()}.
 gc_index_query(RiakPid, EndTime, BatchSize, Continuation, true) ->
     Options = [{max_results, BatchSize},
@@ -591,7 +591,8 @@ schedule_next(#state{interval=infinity}=State) ->
 schedule_next(#state{batch_start=Current,
                      interval=Interval,
                      initial_delay=undefined}=State) ->
-    Next = riak_cs_gc:timestamp() + Interval,
+    Next = calendar:gregorian_seconds_to_datetime(
+             riak_cs_gc:timestamp() + Interval),
     _ = lager:debug("Scheduling next garbage collection for ~p",
                     [Next]),
     TimerRef = erlang:send_after(Interval*1000,
